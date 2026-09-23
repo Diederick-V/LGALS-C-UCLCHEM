@@ -63,9 +63,10 @@ CONTAINS
             RETURN
         END IF
 
-        !calculate initial column density as distance from core edge to current point * density
+        ! Point 1 is the cloud edge and point N is the cloud centre.
+        ! Column density increases from edge to centre.
         DO dstep=1,points
-            coldens(dstep)=real(points-dstep+1)*cloudSize/real(points)*initialDens
+            coldens(dstep)=real(dstep)*cloudSize/real(points)*initialDens
         END DO
           !calculate the Av using an assumed extinction outside of core (baseAv), depth of point and density
         av= baseAv + coldens/1.6d21
@@ -73,15 +74,14 @@ CONTAINS
     END SUBROUTINE coreInitializePhysics
 
     SUBROUTINE coreUpdatePhysics
-        !calculate column density. Remember dstep counts from core centre to edge
-        !and coldens should be amount of gas from edge to parcel.
+        ! Calculate column density. Point 1 is the cloud edge and point N is the cloud centre.
+        ! coldens is the cumulative column from the edge to the current parcel.
         coldens(dstep)=cloudSize/real(points)*density(dstep)
 
-        ! add previous column densities to current as we move into cloud to get total
-        IF (dstep .lt. points) coldens(dstep)=coldens(dstep)+coldens(dstep-1)
+        ! Add previous column densities as we move further into the cloud.
+        IF (dstep .gt. 1) coldens(dstep)=coldens(dstep)+coldens(dstep-1)
 
-        !calculate the Av using an assumed extinction outside of core (baseAv), depth of point and density
-        av(dstep)= baseAv + coldens(dstep)/1.6d21
+        av(dstep)=baseAv+coldens(dstep)/1.6d21
         dustTemp=gasTemp
 
         IF (cosmicRayAttenuation) CALL ionizationDependency
